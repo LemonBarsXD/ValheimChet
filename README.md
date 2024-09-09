@@ -1,5 +1,5 @@
-# Current Version 
-1.0.0
+# Current Release 
+1.0.0-alpha (Pre-release)
 
 # How to use/inject
 1. Compile project (of course)
