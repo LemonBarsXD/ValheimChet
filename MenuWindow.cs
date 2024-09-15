@@ -310,7 +310,7 @@ namespace ValheimChet
                         GUILayout.EndHorizontal();
 
                         GUILayout.BeginHorizontal();
-                        Vars.noHurt = GUILayout.Toggle(Vars.noHurt, "OneTap");
+                        Vars.oneTap = GUILayout.Toggle(Vars.oneTap, "OneTap");
                         GUILayout.EndHorizontal();
 
                         // Effect Changer
