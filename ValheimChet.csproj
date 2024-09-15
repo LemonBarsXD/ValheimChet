@@ -308,7 +308,7 @@
     <Compile Include="Chet.cs" />
     <Compile Include="ClassFieldsChecker.cs" />
     <Compile Include="Hooks.cs" />
-    <Compile Include="PrivateMethodCalls.cs" />
+    <Compile Include="Reflections.cs" />
     <Compile Include="Render.cs" />
     <Compile Include="UserInput.cs" />
     <Compile Include="Loader.cs" />

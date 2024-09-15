@@ -1,13 +1,12 @@
 ﻿// Author: Upwn
-// Ver: 1.0.0
+// Ver: 1.1.0
 
 using UnityEngine;
 
 /* -- TODO / Notes --
- * Custom entity spawn (possible)
- * First person (lol)
- * NoDamage implementation (maybe possible)
- * Global Custom Messages (maybe possible)
+ * Ver. 1.1.1 - Fix no stamina (attack stamina drain)
+ * Ver. 1.1.1 - First person (possible)
+ * Ver. 1.1.1 - Optimize Search Query (the more results it finds, the more it lags)
    -- ----  /  ---- -- */
 
 namespace ValheimChet
@@ -28,14 +27,16 @@ namespace ValheimChet
             Vars.acceleration_changer = false;
             Vars.skill_changer = false;
             Vars.health_changer = false;
-            Vars.noTurnDelay = false;
-            Vars.noFall = false;
-            Vars.noStamina = false;
             Vars.smoothCamera_toggle = true;
             Vars.tpAllEntitiesToPlayer = false;
             Vars.esp_toggle = false;
             Vars.esp_boxes = false;
             Vars.esp_lines = false;
+            Vars.noTurnDelay = false;
+            Vars.noFall = false;
+            Vars.noStamina = false;
+            Vars.noHurt = false;
+            Vars.oneTap = false;
 
             // floats
             Vars.defaultFov = Camera.main.fieldOfView;
@@ -58,6 +59,9 @@ namespace ValheimChet
 
             Vars.defaultJumpStaminaUsage = localPlayer.m_jumpStaminaUsage;
             Vars.defaultDodgeStaminaUsage = localPlayer.m_dodgeStaminaUsage;
+
+            // other
+            Vars.Prefabs.m_prefabHashDictionary = Reflections.GetNamedPrefabs();
         }
 
         public static void SetBaseHPAndHealth(float value)
@@ -69,11 +73,11 @@ namespace ValheimChet
         }
         static void Player_Cache()
         {
-            // i know these look bad (send halp plz)
+            // dont judge
             if (Vars.fov_changer)
             {
-                Camera.main.fieldOfView = Vars.currentFov;
-            } else { Camera.main.fieldOfView = Vars.defaultFov; }
+                Camera.main.GetComponent<GameCamera>().m_fov = Vars.currentFov;
+            } else { Camera.main.GetComponent<GameCamera>().m_fov = Vars.defaultFov; }
 
             if (Vars.smoothCamera_toggle)
             {
@@ -110,7 +114,6 @@ namespace ValheimChet
 
 
 
-            // Hard coded but it's fine... untill its not. If these values are modified by the devs in the future these will be wrong.
             if (Vars.noStamina)
             {
                 Player.m_localPlayer.m_jumpStaminaUsage = 0f;
@@ -122,8 +125,10 @@ namespace ValheimChet
                 Player.m_localPlayer.m_equipStaminaDrain = 0f;
                 Player.m_localPlayer.m_runStaminaDrain = 0f;
                 Player.m_localPlayer.m_sneakStaminaDrain = 0f;
-            } else 
-            { 
+            } 
+            else
+            {
+                // Hard coded but it's fine... untill its not. If these values are modified by the devs in the future these will be wrong.
                 Player.m_localPlayer.m_jumpStaminaUsage = 10f;
                 Player.m_localPlayer.m_dodgeStaminaUsage = 15f;
                 Player.m_localPlayer.m_blockStaminaDrain = 10f;
@@ -133,35 +138,22 @@ namespace ValheimChet
                 Player.m_localPlayer.m_sneakStaminaDrain = 5f;
             }
 
-            // Same here. If modified by the devs in the future these will be wrong.
             if (Vars.noTurnDelay)
             {
 
-                CallMethodPrivate._Spawn();
-                Vars.noTurnDelay = !Vars.noTurnDelay;
-                FieldsChecker.Start();
-
-                //Player.m_localPlayer.m_turnSpeed = 10000f;
-                //Player.m_localPlayer.m_runTurnSpeed = 10000f;
-                //Player.m_localPlayer.m_swimTurnSpeed = 10000f;
-                //Player.m_localPlayer.m_flyTurnSpeed = 10000f;
+                Player.m_localPlayer.m_turnSpeed = 10000f;
+                Player.m_localPlayer.m_runTurnSpeed = 10000f;
+                Player.m_localPlayer.m_swimTurnSpeed = 10000f;
+                Player.m_localPlayer.m_flyTurnSpeed = 10000f;
             }
             else
             {
+                // Same here. If modified by the devs in the future these will be wrong.
                 Player.m_localPlayer.m_turnSpeed = 300f;
                 Player.m_localPlayer.m_runTurnSpeed = 300f;
                 Player.m_localPlayer.m_swimTurnSpeed = 100f;
                 Player.m_localPlayer.m_flyTurnSpeed = 12f;
             }
-
-            if(Vars.spawnEntity_toggle)
-            {
-                CallMethodPrivate._Spawn();
-                Vars.noTurnDelay = !Vars.noTurnDelay;
-                FieldsChecker.Start();
-            }
-
-            
         }
 
         public void DrawBoxESP(Vector3 footpos, Vector3 headpos, Color color, string name)
@@ -192,17 +184,16 @@ namespace ValheimChet
             }
         }
 
-        public void OnGUI()
+
+        public void CharacterLoop()
         {
-            MenuWindow.Draw();
+            foreach (Character character in Character.GetAllCharacters())
+            {
 
-            foreach (Character character in Player.GetAllCharacters())
-            { 
-
-                if(character == null || character.IsPlayer()) continue;
+                if (character == null || character.IsPlayer()) continue;
 
                 Vector3 pivotPos = character.transform.position; //Pivot point NOT at the feet, at the center
-                Vector3 playerFootPos; playerFootPos.x = pivotPos.x; playerFootPos.z = pivotPos.z; playerFootPos.y = pivotPos.y - character.GetHeight() ; //At the feet
+                Vector3 playerFootPos; playerFootPos.x = pivotPos.x; playerFootPos.z = pivotPos.z; playerFootPos.y = pivotPos.y - character.GetHeight(); //At the feet
                 Vector3 playerHeadPos; playerHeadPos.x = pivotPos.x; playerHeadPos.z = pivotPos.z; playerHeadPos.y = pivotPos.y + character.GetHeight(); //At the head
 
                 //Screen Position
@@ -211,14 +202,14 @@ namespace ValheimChet
 
                 if (Vars.tpAllEntitiesToPlayer)
                 {
-                    foreach (Character _character in Player.GetAllCharacters())
+                    foreach (Character _character in Character.GetAllCharacters())
                     {
-                        if(_character.IsPlayer()) continue;
+                        if (_character.IsPlayer()) continue;
 
 
                         _character.transform.position = new Vector3(
-                            Player.m_localPlayer.transform.position.x, 
-                            Player.m_localPlayer.transform.position.y + 10f, 
+                            Player.m_localPlayer.transform.position.x,
+                            Player.m_localPlayer.transform.position.y + 10f,
                             Player.m_localPlayer.transform.position.z);
                     }
 
@@ -230,6 +221,12 @@ namespace ValheimChet
                     DrawBoxESP(w2s_footpos, w2s_headpos, Color.white, character.m_name);
                 }
             }
+        }
+
+        public void OnGUI()
+        {
+            MenuWindow.Draw();
+            CharacterLoop();
         }
 
         public void Start()
