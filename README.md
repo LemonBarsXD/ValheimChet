@@ -1,5 +1,5 @@
 # Current Release 
-1.0.0-release (Offial-release)
+1.0.0-release (Offical-release)
 
 # How to use/inject
 1. Compile project (of course)
