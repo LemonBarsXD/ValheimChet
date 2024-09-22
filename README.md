@@ -9,5 +9,5 @@
 4. Use something like MelonLoader to see Debug Logs (Optional) 
 
 
-# Fair Use
+# Disclaimer
 DO NOT BE A DICK, FAIR USE. I TAKE NO RESPONSIBILITY FOR YOUR ACTIONS.
