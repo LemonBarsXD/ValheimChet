@@ -4,18 +4,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/* -- TODO / Notes --
- * Ver 1.1.0
- * Fixed NoHurt 
- * Fixed NoStamina to work while attacking 
- * Added Spawn on player option for Custom Entity Spawner 
- * Added Killaura with customizable settings (not perfect, not bad either)
- * Added hitRange and hitHeight (does not affect killaura, pretty useless, just cool ig)
- * Added ping 
- * Implemented a better log method
- * Better code safety, bug and ud fixes etc.
-   -- ----  /  ---- -- */
-
 namespace ValheimChet
 {
     internal class Chet : MonoBehaviour
