@@ -1,7 +1,7 @@
 # Current Release 
 v1.1.0
 
-# How to use/inject
+# How to use/inject (Windows)
 1. Compile project or use already compiled from releases. <br _>
 2. Install a mono injector. I use this one: [SharpMonoInjector Fixed v2.5](https://www.unknowncheats.me/forum/downloads.php?do=file&id=34970) <br _>
 3. Run your mono injector of choice and inject the YOUR_PATH\ValheimChet\bin\Debug\ValheimChet.dll with these attributes: <br _>
