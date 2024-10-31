@@ -3,6 +3,7 @@
 using System.Reflection;
 using System.IO;
 using UnityEngine;
+using ValheimChet;
 
 public class FieldsChecker
 {
@@ -52,7 +53,7 @@ public class FieldsChecker
             }
         }
 
-        Debug.Log("Fields and properties including base classes have been written to " + path);
+        Chet.Log("Fields and properties including base classes have been written to " + path);
     }
 }
 

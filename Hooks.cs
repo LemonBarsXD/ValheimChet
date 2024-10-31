@@ -4,16 +4,9 @@ using UnityEngine;
 using ValheimChet;
 
 
-// Does not work, im starting to think fall damage is server sided
-// Currently about 7 days later and i can now proudly say that i've found tha solution :) 
-/* 
- * Lesson learned:
- * This game has thousands of different functions that modifies your health one way or another.
- * That made it confusing for me to find the right function to hook.
- * Therefore, if you're trying to hook anything in this and it doesn't work, don't make the same mistake as me. 
- * Dig deep down into the structure of the game and the game classes to find the right function and if they don't work try another or another approach. I believe in you :)
-*/
-public class ModEntryPoint
+// 7d2dmods.github.io/HarmonyDocs/index.htm?PrefixandPostfix.html
+// Very gud resource, i recommend ;)
+public class PatchEntryPoint
 {
     public static void Init()
     {
@@ -29,31 +22,41 @@ public class OnDamage
 {
     private static void Prefix(ref long sender, ref HitData hit)
     {
-        if(Vars.noFall)
+        try
         {
-            if (hit.m_hitType == HitData.HitType.Fall)
+            if (Vars.noFall)
             {
-                hit.m_damage.m_damage = 0;
-                Debug.Log("Modified m_damage of HitData.HitType.Fall to: " + hit.m_damage.m_damage);
+                if (hit.m_hitType == HitData.HitType.Fall)
+                {
+                    hit.m_damage.m_damage = 0;
+                    Chet.Log("Modified m_damage of HitData.HitType.Fall to: " + hit.m_damage.m_damage + "\n");
+                }
+            }
+
+            if (Vars.noHurt)
+            {
+                // Does not work for some reason
+                if (hit.m_hitType == HitData.HitType.EnemyHit)
+                {
+                    hit.m_damage.m_blunt = 0;
+                    hit.m_damage.m_damage = 0;
+                    Chet.Log("Damage set to: " + hit.m_damage.m_damage + " Blunt damage set to: " + hit.m_damage.m_blunt + "\n");
+                }
+            }
+
+            if (Vars.oneTap)
+            {
+                // Imagine if I didn't find the RPC_Damage method (hell would've emerged)
+                if (hit.GetAttacker() == Player.m_localPlayer)
+                {
+                    hit.m_damage.m_damage = float.MaxValue;
+                    Chet.Log("hit.m_damage.m_damage set to: float.Maxvalue\n");
+                }
             }
         }
-
-        if(Vars.noHurt)
+        catch (System.Exception e)
         {
-            // It's a joke how easy it is XDDD
-            if(hit.GetAttacker() != Player.m_localPlayer)
-            {
-                hit.m_damage.m_damage = 0;
-            }
-        }
-
-        if(Vars.oneTap)
-        {
-            // Imagine if I didn't find the RPC_Damage method (hell would've emerged)
-            if (hit.GetAttacker() == Player.m_localPlayer)
-            {
-                hit.m_damage.m_damage = float.MaxValue;
-            }
+            Chet.ErrorLog($"Exception in patch of private void Character::RPC_Damage:\n{e}\n");
         }
     }
 }
@@ -65,20 +68,118 @@ public class OnSpawn
 {
     private static void Postfix(SpawnSystem.SpawnData critter, Vector3 spawnPoint, bool eventSpawner)
     {
-        Debug.Log("Entity Spawned: " + critter.m_prefab.name);
-        Vars.EntitySpawnData.lastSpawnedEntity = critter;
+        try
+        {
+            Chet.Log("Entity Spawned: " + critter.m_prefab.name + " at " + spawnPoint + "\n");
+            Vars.EntitySpawnData.lastSpawnedEntity = critter;
+        }
+        catch (System.Exception e)
+        {
+            Chet.ErrorLog($"Exception in patch of private void SpawnSystem::Spawn:\n{e} \n");
+        }
     }
 }
 
-// Token: 0x06000254 RID: 596 RVA: 0x00014C90 File Offset: 0x00012E90
-// private ZNetView Spawn()
-//[HarmonyPatch(typeof(CreatureSpawner), "Spawn")]
-//public class OnCreatureSpawn
-//{
-//    private void Postfix(CreatureSpawner _instance)
-//    {
-//        Debug.Log(_instance.m_creaturePrefab.name);
 
-//        //return _instance.GetComponent<ZNetView>();
-//    }
-//}
+// Token: 0x0600037E RID: 894 RVA: 0x00020A35 File Offset: 0x0001EC35
+// private void RPC_UseStamina(long sender, float v)
+[HarmonyPatch(typeof(Player), "RPC_UseStamina")]
+public class OnStaminaUse
+{
+    private static void Postfix(long sender, float v)
+    {   
+        try { 
+            if (Vars.noStamina)
+            {
+                Player.m_localPlayer.AddStamina(v);
+            }
+        } catch (System.Exception e)
+        {
+            Chet.ErrorLog($"Exception in patch of public private void Player::RPC_UseStamina:\n{e}\n");
+        }
+    }
+}
+
+
+// Token: 0x06000021 RID: 33 RVA: 0x00003548 File Offset: 0x00001748
+// public bool Start(Humanoid character, Rigidbody body, ZSyncAnimation zanim, CharacterAnimEvent animEvent, VisEquipment visEquipment, ItemDrop.ItemData weapon, Attack previousAttack, float timeSinceLastAttack, float attackDrawPercentage)
+[HarmonyPatch(typeof(Attack), "Start")]
+public class OnAttackStart
+{
+    public static bool Prefix(Attack __instance, Humanoid character, Rigidbody body, ZSyncAnimation zanim, CharacterAnimEvent animEvent, VisEquipment visEquipment, ItemDrop.ItemData weapon, Attack previousAttack, float timeSinceLastAttack, float attackDrawPercentage)
+    {
+        try
+        {
+            if (!character.IsPlayer() || __instance.m_attackType != Attack.AttackType.None || __instance.m_attackType != Attack.AttackType.Projectile)
+            {
+
+                if (Vars.killauraEnabled)
+                {
+                    Vector3 cameraForward = Camera.main.transform.forward;
+
+                    __instance.m_attackRange = Vars.killauraHitRange;
+                    __instance.m_attackHeight = Vars.killauraHitHeight+0.5f;
+                    Chet.Log($"Modified attack range to: {__instance.m_attackRange}");
+                    Chet.Log($"Modified attack height to: {__instance.m_attackHeight}\n");
+                }
+                else
+                {
+                    if (Vars.hitRange_changer)
+                    {
+                        __instance.m_attackRange = Vars.currentHitRange;
+                        Chet.Log($"Modified attack range to: {Vars.currentHitRange}\n");
+                    }
+                    if (Vars.hitHeight_changer)
+                    {
+                        __instance.m_attackHeight = Vars.currentHitHeight;
+                        Chet.Log($"Modified attack height to: {Vars.currentHitHeight}\n");
+
+                    }
+                }
+
+            }
+        }
+        catch (System.Exception e)
+        {
+            Chet.ErrorLog($"Exception in patch of public bool Attack::Start:\n{e}\n");
+        }
+
+        return true;
+    }
+}
+
+// Token: 0x06000E19 RID: 3609 RVA: 0x0006C700 File Offset: 0x0006A900
+// public float GetServerPing()
+[HarmonyPatch(typeof(ZNet), "GetServerPing")]
+public class OnServerPing
+{
+    public static bool Prefix(ref float __result)
+    {
+        try
+        {
+            Vars.serverPing = (int)__result;
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            Chet.ErrorLog($"Exception in patch of public float ZNet::GetServerPing:\n{e}\n");
+            __result = 0f;
+            return false;
+        }
+    }
+
+    //public static float Prefix(float __result)
+    //{
+    //    try
+    //    {
+    //        Vars.serverPing = (int)__result;
+    //        return __result;
+    //    }
+    //    catch (System.Exception e)
+    //    {
+    //        Chet.ErrorLog($"Exception in patch of public float ZNet::GetServerPing:\n{e}\n");
+    //        return 0f;
+    //    }
+    //}
+}
+

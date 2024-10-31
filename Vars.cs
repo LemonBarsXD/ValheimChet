@@ -38,12 +38,17 @@ namespace ValheimChet
         public static bool skill_changer;
         public static bool health_changer;
         public static bool effect_changer;
+        public static bool hitRange_changer;
+        public static bool hitHeight_changer;
         public static bool menu_toggle;
         public static bool smoothCamera_toggle;
         public static bool esp_toggle;
         public static bool esp_boxes;
         public static bool esp_lines;
         public static bool esp_name;
+        public static bool killauraEnabled;
+        public static bool killauraFOVCircle;
+        public static bool killauraSnap;
         public static bool tpAllEntitiesToPlayer;
         public static bool noFall;
         public static bool noStamina;
@@ -55,6 +60,18 @@ namespace ValheimChet
         /* Floats */
         public static float currentFov;
         public static float defaultFov;
+
+        public static float killauraRadius;
+        public static float killauraFOV;
+        public static float killauraHitRange;
+        public static float killauraHitHeight;
+
+
+        public static float currentHitRange;
+        public static float defaultHitRange;
+
+        public static float currentHitHeight;
+        public static float defaultHitHeight;
 
         public static float currentSpeed;
         public static float defaultSpeed;
@@ -68,11 +85,12 @@ namespace ValheimChet
         public static float defaultAirAcceleration;
         public static float defaultSwimAcceleration;
 
-        public static int currentBaseHP; // i know
+        public static int currentBaseHP; // heck 
         public static float defaultBaseHP;
                 
         public static float defaultJumpStaminaUsage;
         public static float defaultDodgeStaminaUsage;
+
 
         /* Integers */
         public static int tpPosX;
@@ -83,11 +101,13 @@ namespace ValheimChet
         public static int prefabSpawnPosY;
         public static int prefabSpawnPosZ;
 
+        public static int serverPing;
 
-        public static int currentSpawnHash;
 
         /* Strings */
         public static string str_currentBaseHP;
+        public static string killauraTargetName;
+
         public static readonly string[] effectNames = {
             "CorpseRun",
             "Burning",

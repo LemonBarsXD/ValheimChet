@@ -11,10 +11,16 @@ namespace ValheimChet
                 Vars.menu_toggle = !Vars.menu_toggle;
             }
 
+            if (Input.GetKeyDown(KeyCode.G))
+            {
+                Vars.killauraEnabled = !Vars.killauraEnabled;
+            }
+
             if (Input.GetKey(KeyCode.End))
             {
                 Loader.Unload();
             }
+
         }
     }
 }

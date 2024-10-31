@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using ValheimChet;
 
 // Private methods and fields accessed/called by Reflection
 public class Reflections
@@ -20,13 +21,12 @@ public class Reflections
 
         if (spawnMethod != null)
         {
-            // Call
             object[] parameters = { critter, spawnPoint, eventSpawner };
             spawnMethod.Invoke(classInstance, parameters);
         }
         else
         {
-            Debug.LogError("Method 'Spawn' not found!");
+            Chet.ErrorLog("Method 'Spawn' not found!");
         }
     }
 
@@ -39,7 +39,7 @@ public class Reflections
 
         if (zNetScene == null)
         {
-            Debug.LogError("ZNetScene instance is null");
+            Chet.ErrorLog("ZNetScene instance is null");
             return null;
         }
 
@@ -54,7 +54,7 @@ public class Reflections
         }
         else
         {
-            Debug.LogError("Field 'm_namedPrefabs' not found.");
+            Chet.ErrorLog("Field 'm_namedPrefabs' not found.");
             return null;
         }
 

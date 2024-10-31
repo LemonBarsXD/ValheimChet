@@ -1,11 +1,12 @@
-﻿// NathanEDITS is a life saver :pray:
-// Cred: https://gist.github.com/ethanedits/9c97dfc3746412007c43101e93dfbc98
+﻿// Cred: https://gist.github.com/ethanedits/9c97dfc3746412007c43101e93dfbc98
 
-using System;
 using UnityEngine;
 
 public class Render : MonoBehaviour
 {
+
+
+
     public static GUIStyle StringStyle { get; set; } = new GUIStyle(GUI.skin.label);
 
     public static Color Color
@@ -73,5 +74,21 @@ public class Render : MonoBehaviour
         DrawLine(Point, new Vector2(Point.x, Point.y + height), color, thickness);
         DrawLine(new Vector2(Point.x + width, Point.y + height), new Vector2(Point.x + width, Point.y), color, thickness);
         DrawLine(new Vector2(Point.x + width, Point.y + height), new Vector2(Point.x, Point.y + height), color, thickness);
+    }
+
+    public static void DrawCircle(Vector2 center, float radius, int segments, Color color, float lineWidth)
+    {
+        float angleStep = 360f / segments;
+
+        for (int i = 0; i < segments; i++)
+        {
+            float angle1 = Mathf.Deg2Rad * (i * angleStep);
+            float angle2 = Mathf.Deg2Rad * ((i + 1) * angleStep);
+
+            Vector2 pointA = new Vector2(center.x + Mathf.Cos(angle1) * radius, center.y + Mathf.Sin(angle1) * radius);
+            Vector2 pointB = new Vector2(center.x + Mathf.Cos(angle2) * radius, center.y + Mathf.Sin(angle2) * radius);
+
+            DrawLine(pointA, pointB, color, lineWidth);
+        }
     }
 }

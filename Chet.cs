@@ -1,25 +1,37 @@
 ﻿// Author: Upwn
 // Ver: 1.1.0
 
+using System.Collections.Generic;
 using UnityEngine;
 
 /* -- TODO / Notes --
- * Ver. 1.1.1 - Fix no stamina (attack stamina drain)
- * Ver. 1.1.1 - First person (possible)
- * Ver. 1.1.1 - Optimize Search Query (the more results it finds, the more it lags)
+ * Ver 1.1.0
+ * Fixed NoHurt 
+ * Fixed NoStamina to work while attacking 
+ * Added Spawn on player option for Custom Entity Spawner 
+ * Added Killaura with customizable settings (not perfect, not bad either)
+ * Added hitRange and hitHeight (does not affect killaura, pretty useless, just cool ig)
+ * Added ping 
+ * Implemented a better log method
+ * Better code safety, bug and ud fixes etc.
    -- ----  /  ---- -- */
 
 namespace ValheimChet
 {
     internal class Chet : MonoBehaviour
     {
-
         static void Init()
         {
+            System.Console.Clear();
+            Chet.Log("Chet injected! Skill corrected! Targets detected! Mayhem perfected ;)");
+
             // Local Player
             Player localPlayer = Player.m_localPlayer;
-            
-            // bools
+
+            // Default Attack
+            Attack defaultAttack = new Attack();
+
+            // Bools
             Vars.menu_toggle = true;
             Vars.fov_changer = false;
             Vars.speed_changer = false;
@@ -27,20 +39,28 @@ namespace ValheimChet
             Vars.acceleration_changer = false;
             Vars.skill_changer = false;
             Vars.health_changer = false;
+            Vars.hitRange_changer = false;
+            Vars.hitHeight_changer = false;
             Vars.smoothCamera_toggle = true;
             Vars.tpAllEntitiesToPlayer = false;
             Vars.esp_toggle = false;
             Vars.esp_boxes = false;
             Vars.esp_lines = false;
+            Vars.killauraEnabled = false;
+            Vars.killauraFOVCircle = false;
+            Vars.killauraSnap = false;
             Vars.noTurnDelay = false;
             Vars.noFall = false;
             Vars.noStamina = false;
             Vars.noHurt = false;
             Vars.oneTap = false;
 
-            // floats
+            // Floats
             Vars.defaultFov = Camera.main.fieldOfView;
             Vars.currentFov = Vars.defaultFov;
+
+            Vars.killauraFOV = 90f;
+            Vars.killauraRadius = 60f;
 
             Vars.defaultSpeed = localPlayer.m_speed;
             Vars.currentSpeed = Vars.defaultSpeed;
@@ -57,22 +77,68 @@ namespace ValheimChet
             Vars.defaultBaseHP = localPlayer.m_baseHP;
             Vars.currentBaseHP = (int)Vars.defaultBaseHP;
 
+            Vars.defaultHitRange = defaultAttack.m_attackRange;
+            Vars.currentHitRange = Vars.defaultHitRange; 
+
+            Vars.defaultHitHeight = defaultAttack.m_attackHeight;
+            Vars.currentHitHeight = Vars.defaultHitHeight;
+
             Vars.defaultJumpStaminaUsage = localPlayer.m_jumpStaminaUsage;
             Vars.defaultDodgeStaminaUsage = localPlayer.m_dodgeStaminaUsage;
 
-            // other
+            // Other
             Vars.Prefabs.m_prefabHashDictionary = Reflections.GetNamedPrefabs();
         }
 
+        public static void Log(string _str)
+        {
+            Debug.Log($"[ValheimChet] {_str}");
+        }
+
+        public static void ErrorLog(string _str)
+        {
+            Debug.LogError($"[ValheimChet] {_str}");
+        }
+
+
+        /*
+            Might be used in the future so i will keep them here (ignore it)
+         */
+        //private Vector2 QuaternionToYawPitch(Quaternion rotation)
+        //{
+        //    Vector2 yawPitch;
+
+        //    yawPitch.x = rotation.eulerAngles.y;
+
+        //    // pitch (rotation around X axis, considering negative due to camera)
+        //    float pitch = rotation.eulerAngles.x;
+        //    yawPitch.y = pitch > 180f ? pitch - 360f : pitch;
+
+        //    // avoiding looking too far up or down
+        //    yawPitch.y = Mathf.Clamp(yawPitch.y, -89f, 89f);
+
+        //    return yawPitch;
+        //}
+
+        //public Quaternion YawPitchToQuaternion(float yaw, float pitch)
+        //{
+        //    Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f); // Assuming no roll (Z axis)
+        //    return rotation;
+        //}
+
         public static void SetBaseHPAndHealth(float value)
         {
-            Player _localPlayer = Player.m_localPlayer;
+            Player localPlayer = Player.m_localPlayer;
 
-            _localPlayer.m_baseHP = value;
-            _localPlayer.SetHealth(value);
+            localPlayer.m_baseHP = value;
+            localPlayer.SetHealth(value);
         }
         static void Player_Cache()
         {
+            Player localPlayer = Player.m_localPlayer;
+
+            Quaternion localQuaternion = Quaternion.identity;
+
             // dont judge
             if (Vars.fov_changer)
             {
@@ -86,25 +152,25 @@ namespace ValheimChet
 
             if (Vars.speed_changer)
             {
-                Player.m_localPlayer.m_speed = Vars.currentSpeed;
-                Player.m_localPlayer.m_swimSpeed = Vars.currentSpeed;
+                localPlayer.m_speed = Vars.currentSpeed;
+                localPlayer.m_swimSpeed = Vars.currentSpeed;
             } else { 
-                Player.m_localPlayer.m_speed = Vars.defaultSpeed;
-                Player.m_localPlayer.m_swimSpeed = Vars.defaultSwimSpeed;
+                localPlayer.m_speed = Vars.defaultSpeed;
+                localPlayer.m_swimSpeed = Vars.defaultSwimSpeed;
             }
 
             if (Vars.runSpeed_changer)
             {
-                Player.m_localPlayer.m_runSpeed = Vars.currentRunSpeed;
-            } else { Player.m_localPlayer.m_runSpeed = Vars.defaultRunSpeed; }
+                localPlayer.m_runSpeed = Vars.currentRunSpeed;
+            } else { localPlayer.m_runSpeed = Vars.defaultRunSpeed; }
 
             if (Vars.acceleration_changer)
             {
-                Player.m_localPlayer.m_acceleration = Vars.currentAcceleration;
+                localPlayer.m_acceleration = Vars.currentAcceleration;
             } else 
             { 
-                Player.m_localPlayer.m_acceleration= Vars.defaultAcceleration; 
-                Player.m_localPlayer.m_swimAcceleration= Vars.defaultSwimAcceleration; 
+                localPlayer.m_acceleration= Vars.defaultAcceleration; 
+                localPlayer.m_swimAcceleration= Vars.defaultSwimAcceleration; 
             }
 
             if (Vars.health_changer)
@@ -112,47 +178,110 @@ namespace ValheimChet
                 SetBaseHPAndHealth(Vars.currentBaseHP);
             } else { SetBaseHPAndHealth(Vars.defaultBaseHP); }
 
-
-
-            if (Vars.noStamina)
-            {
-                Player.m_localPlayer.m_jumpStaminaUsage = 0f;
-                Player.m_localPlayer.m_dodgeStaminaUsage = 0f;
-                Player.m_localPlayer.m_blockStaminaDrain = 0f;
-                Player.m_localPlayer.m_encumberedStaminaDrain = 0f;
-                Player.m_localPlayer.m_swimStaminaDrainMaxSkill = 0f;
-                Player.m_localPlayer.m_swimStaminaDrainMinSkill = 0f;
-                Player.m_localPlayer.m_equipStaminaDrain = 0f;
-                Player.m_localPlayer.m_runStaminaDrain = 0f;
-                Player.m_localPlayer.m_sneakStaminaDrain = 0f;
-            } 
-            else
-            {
-                // Hard coded but it's fine... untill its not. If these values are modified by the devs in the future these will be wrong.
-                Player.m_localPlayer.m_jumpStaminaUsage = 10f;
-                Player.m_localPlayer.m_dodgeStaminaUsage = 15f;
-                Player.m_localPlayer.m_blockStaminaDrain = 10f;
-                Player.m_localPlayer.m_encumberedStaminaDrain = 5f;
-                Player.m_localPlayer.m_equipStaminaDrain = 6f;
-                Player.m_localPlayer.m_runStaminaDrain = 8f;
-                Player.m_localPlayer.m_sneakStaminaDrain = 5f;
-            }
-
             if (Vars.noTurnDelay)
             {
 
-                Player.m_localPlayer.m_turnSpeed = 10000f;
-                Player.m_localPlayer.m_runTurnSpeed = 10000f;
-                Player.m_localPlayer.m_swimTurnSpeed = 10000f;
-                Player.m_localPlayer.m_flyTurnSpeed = 10000f;
+                localPlayer.m_turnSpeed = 10000f;
+                localPlayer.m_runTurnSpeed = 10000f;
+                localPlayer.m_swimTurnSpeed = 10000f;
+                localPlayer.m_flyTurnSpeed = 10000f;
             }
             else
             {
-                // Same here. If modified by the devs in the future these will be wrong.
-                Player.m_localPlayer.m_turnSpeed = 300f;
-                Player.m_localPlayer.m_runTurnSpeed = 300f;
-                Player.m_localPlayer.m_swimTurnSpeed = 100f;
-                Player.m_localPlayer.m_flyTurnSpeed = 12f;
+                // If modified by the devs in the future these will be wrong. But meh, they prob won't.
+                localPlayer.m_turnSpeed = 300f;
+                localPlayer.m_runTurnSpeed = 300f;
+                localPlayer.m_swimTurnSpeed = 100f;
+                localPlayer.m_flyTurnSpeed = 12f;
+            }
+
+        }
+
+        public void KillauraUpdate()
+        {
+            if (!Vars.killauraEnabled || !Input.GetMouseButton(4)) return;
+
+            Vector3 playerPos = Player.m_localPlayer.transform.position;
+            Vector3 cameraForward = Camera.main.transform.forward;
+
+            List<Character> enemies = Character.GetAllCharacters();
+
+            float attackRange = Vars.killauraRadius;
+            float cameraFOV = Vars.killauraFOV;
+
+            Character closestEnemy = null;
+            float closestDistance = float.MaxValue;
+
+            foreach (Character enemy in enemies)
+            {
+                if (enemy.IsPlayer() || enemy.IsDead()) continue;
+
+                Vector3 enemyPos = enemy.transform.position;
+                float distanceToEnemy = Vector3.Distance(playerPos, enemyPos);
+
+                if (distanceToEnemy <= attackRange)
+                {
+                    Vector3 directionToEnemy = (enemyPos - Camera.main.transform.position).normalized;
+                    float angleToEnemy = Vector3.Angle(cameraForward, directionToEnemy);
+
+                    // if the enemy is within the camera's FOV
+                    if (angleToEnemy <= cameraFOV / 2f && distanceToEnemy < closestDistance)
+                    {
+                        Vars.killauraHitHeight = enemyPos.y - playerPos.y;
+                        Vars.killauraHitRange = Vector2.Distance(new Vector2(playerPos.x, playerPos.z), new Vector2(enemyPos.x, enemyPos.z));
+                        Player.m_localPlayer.GetTransform().LookAt(enemy.transform);
+                        closestEnemy = enemy;
+                        closestDistance = distanceToEnemy;
+                    }
+                }
+            }
+
+            // if a valid closest enemy is found within FOV, look at the enemy and attack
+            if (closestEnemy != null)
+            {
+                LookAtEnemy(closestEnemy);
+                TriggerAttack(closestEnemy);
+            }
+        }
+
+        public void TriggerAttack(Character enemy)
+        {
+            Vars.killauraTargetName = enemy.name;
+            Player.m_localPlayer.AttackTowardsPlayerLookDir = true;
+
+            Player.m_localPlayer.StartAttack(enemy, false);
+
+            Player.m_localPlayer.AttackTowardsPlayerLookDir = false;
+        }
+
+        private void LookAtEnemy(Character enemy)
+        {
+            Vector3 enemyPos = enemy.transform.position; enemyPos.y += 0.5f; // offset
+            Vector3 cameraPos = Camera.main.transform.position;
+
+            Vector3 directionToEnemy = (enemyPos - cameraPos).normalized;
+
+            Vector3 currentForward = Camera.main.transform.forward;
+
+            float currentYaw = Mathf.Atan2(currentForward.x, currentForward.z) * Mathf.Rad2Deg;
+            float targetYaw = Mathf.Atan2(directionToEnemy.x, directionToEnemy.z) * Mathf.Rad2Deg;
+            float deltaYaw = targetYaw - currentYaw;
+
+            float currentPitch = Mathf.Asin(currentForward.y) * Mathf.Rad2Deg;
+            float targetPitch = Mathf.Asin(directionToEnemy.y) * Mathf.Rad2Deg;
+            float deltaPitch = targetPitch - currentPitch;
+
+            Vector2 lookDirDelta = new Vector2(deltaYaw, deltaPitch);
+
+            Player.m_localPlayer.SetMouseLook(lookDirDelta);
+        }
+
+        public void drawKillauraFOVCicle()
+        {
+            if (Vars.killauraEnabled && Vars.killauraFOVCircle)
+            {
+                float radius = ((float)Screen.width * Mathf.Tan(Vars.killauraFOV * Mathf.Deg2Rad / 2) / ((Screen.width / Screen.height) * 0.5f));
+                Render.DrawCircle(new Vector2(Screen.width / 2, Screen.height / 2), radius, 100, new Color(255, 255, 255), 2f);
             }
         }
 
@@ -192,11 +321,11 @@ namespace ValheimChet
 
                 if (character == null || character.IsPlayer()) continue;
 
-                Vector3 pivotPos = character.transform.position; //Pivot point NOT at the feet, at the center
+                Vector3 pivotPos = character.transform.position; // pivot point NOT at the feet, at the center
                 Vector3 playerFootPos; playerFootPos.x = pivotPos.x; playerFootPos.z = pivotPos.z; playerFootPos.y = pivotPos.y - character.GetHeight(); //At the feet
                 Vector3 playerHeadPos; playerHeadPos.x = pivotPos.x; playerHeadPos.z = pivotPos.z; playerHeadPos.y = pivotPos.y + character.GetHeight(); //At the head
 
-                //Screen Position
+                // screen position
                 Vector3 w2s_footpos = Camera.main.WorldToScreenPoint(playerFootPos);
                 Vector3 w2s_headpos = Camera.main.WorldToScreenPoint(playerHeadPos);
 
@@ -209,7 +338,7 @@ namespace ValheimChet
 
                         _character.transform.position = new Vector3(
                             Player.m_localPlayer.transform.position.x,
-                            Player.m_localPlayer.transform.position.y + 10f,
+                            Player.m_localPlayer.transform.position.y + 6f,
                             Player.m_localPlayer.transform.position.z);
                     }
 
@@ -218,7 +347,7 @@ namespace ValheimChet
 
                 if (w2s_footpos.z > 0f && Vars.esp_toggle)
                 {
-                    DrawBoxESP(w2s_footpos, w2s_headpos, Color.white, character.m_name);
+                    DrawBoxESP(w2s_footpos, w2s_headpos, UnityEngine.Color.white, character.m_name);
                 }
             }
         }
@@ -227,6 +356,7 @@ namespace ValheimChet
         {
             MenuWindow.Draw();
             CharacterLoop();
+            drawKillauraFOVCicle();
         }
 
         public void Start()
@@ -238,6 +368,7 @@ namespace ValheimChet
         public void Update()
         {
            UserInput.PollInput();
+           KillauraUpdate();
            Player_Cache();
         }
     }

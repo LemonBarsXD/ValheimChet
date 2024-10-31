@@ -7,16 +7,16 @@ namespace ValheimChet
     internal class MenuWindow
     {
 
-        // stuff idk
+        // stuff
         private static Rect menuRect;
         
-        private static int tab = 0;
+        private static int currentTab = 0;
         
         private static float raiseValue = 0f;
 
         private static bool distantTP = false;
-        private static bool spawn = false;
         private static bool isValidPrefabSpawnPos = false;
+        private static bool spawnOnPlayer = false;
 
         // Player TP Pos
         private static string str_tpPosX = string.Empty;
@@ -30,10 +30,15 @@ namespace ValheimChet
         private static string str_prefabSpawnPosZ = string.Empty;
 
         // Variables for search method
+        // prefab menu
         private static string searchQuery = string.Empty;
         private static List<string> searchResults = new List<string>();
 
-        private static Vector2 scrollPosition = Vector2.zero;
+        private static Vector2 prefabMenuScrollPosition = Vector2.zero;
+
+        // effects menu
+        private static Vector2 effectsMenuScrollPosition = Vector2.zero;
+
 
         private static void DrawPrefabSearchMenu()
         {
@@ -56,7 +61,7 @@ namespace ValheimChet
 
                 float maxScrollViewHeight = 335f;
 
-                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(maxScrollViewHeight));
+                prefabMenuScrollPosition = GUILayout.BeginScrollView(prefabMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
 
                 GUILayout.Space(4);
 
@@ -71,12 +76,26 @@ namespace ValheimChet
 
                         if (isValidPrefabSpawnPos)
                         {
-                            Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, new Vector3((float)Vars.prefabSpawnPosX, (float)Vars.prefabSpawnPosY, (float)Vars.prefabSpawnPosZ));
-                            Debug.Log($"Spawned prefab: {result}");
+                            if (!spawnOnPlayer)
+                            {
+                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, new Vector3((float)Vars.prefabSpawnPosX, (float)Vars.prefabSpawnPosY, (float)Vars.prefabSpawnPosZ));
+                                Chet.Log($"Spawned prefab: {result}");
+                            } 
+                            else
+                            {
+                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, 
+                                    new Vector3(
+                                        Player.m_localPlayer.transform.position.x, 
+                                        Player.m_localPlayer.transform.position.y + 3.0f, 
+                                        Player.m_localPlayer.transform.position.z) 
+                                    );
+                                Chet.Log($"Spawned prefab: {result}");
+                            }
                         }
                         else
                         {
                             GUILayout.Label("Spawn position is not valid...");
+                            Chet.ErrorLog("Spawn position is not valid...");
                         }
                     }
 
@@ -87,6 +106,155 @@ namespace ValheimChet
             }
         }
 
+        public static void DrawSkillChangerMenu()
+        {
+            bool reset = false;
+
+            Skills _skills = Player.m_localPlayer.GetSkills();
+            GUILayout.BeginHorizontal();
+            Vars.skill_changer = GUILayout.Toggle(Vars.skill_changer, "Skill Changer");
+            GUILayout.EndHorizontal();
+            if (Vars.skill_changer)
+            {
+                GUILayout.BeginVertical();
+                GUILayout.Label($"Raise Value: {raiseValue}");
+                raiseValue = GUILayout.HorizontalSlider(raiseValue, 0f, 100f);
+
+                foreach (string skill in Vars.skillNames)
+                {
+                    bool toggled = false;
+
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(skill);
+                    toggled = GUILayout.Toggle(toggled, "Raise");
+                    reset = GUILayout.Toggle(reset, "Reset");
+                    GUILayout.Label("        ");
+                    GUILayout.EndHorizontal();
+                    if (toggled)
+                    {
+                        _skills.CheatRaiseSkill(skill, raiseValue, true);
+                        Chet.Log($"Raised Skill: {skill} with {raiseValue}");
+                        toggled = !toggled;
+                    }
+                    if (reset)
+                    {
+                        if (skill.ToLower() == "all")
+                        {
+                            foreach (string _skill in Vars.skillNames)
+                            {
+                                if (_skill == "all")
+                                    continue;
+                                _skills.CheatResetSkill(_skill);
+                            }
+                            continue;
+                        }
+                        _skills.CheatResetSkill(skill);
+                        Chet.Log($"Reseted Skill: {skill}");
+                        reset = !reset;
+                    }
+                }
+                GUILayout.EndVertical();
+            }
+        }
+
+        public static void DrawEffectsChangerMenu()
+        {
+            bool reset = false;
+
+            GUILayout.BeginHorizontal();
+            Vars.effect_changer = GUILayout.Toggle(Vars.effect_changer, "Effect Changer");
+            GUILayout.EndHorizontal();
+            if (Vars.effect_changer)
+            {
+                float maxScrollViewHeight = 300f;
+
+                effectsMenuScrollPosition = GUILayout.BeginScrollView(effectsMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
+
+                GUILayout.Space(4);
+
+                foreach (string effectName in Vars.effectNames)
+                {
+                    bool toggled = false;
+
+
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(effectName);
+                    toggled = GUILayout.Toggle(toggled, "Add");
+                    reset = GUILayout.Toggle(reset, "Reset");
+                    GUILayout.Label("        ");
+                    GUILayout.EndHorizontal();
+                    if (toggled)
+                    {
+                        if (effectName == "All")
+                        {
+                            foreach (string _effectName in Vars.effectNames)
+                            {
+                                if (_effectName == "All") continue;
+
+                                Player.m_localPlayer.GetSEMan().AddStatusEffect(_effectName.GetStableHashCode());
+                            }
+                            continue;
+                        }
+                        Player.m_localPlayer.GetSEMan().AddStatusEffect(effectName.GetStableHashCode());
+                        Chet.Log("Effect Added: " + effectName);
+                        toggled = !toggled;
+                    }
+                    if (reset)
+                    {
+                        if (effectName == "All")
+                        {
+                            Player.m_localPlayer.GetSEMan().RemoveAllStatusEffects();
+                            continue;
+                        }
+
+                        Player.m_localPlayer.GetSEMan().RemoveStatusEffect(effectName.GetStableHashCode());
+                        reset = !reset;
+                    }
+                }
+                GUILayout.EndScrollView();
+            }
+        }
+
+        public static void DrawKillauraMenu()
+        {
+            Vars.killauraEnabled = GUILayout.Toggle(Vars.killauraEnabled, "Killaura");
+
+            if (Vars.killauraEnabled)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                GUILayout.Label($"Target: {Vars.killauraTargetName}");
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                GUILayout.Label("Killaura Radius:", GUILayout.Width(120));
+                Vars.killauraRadius = GUILayout.HorizontalSlider(Vars.killauraRadius, 1f, 100f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                GUILayout.Label($"Radius: {Mathf.RoundToInt(Vars.killauraRadius)}");
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                GUILayout.Label("Killaura FOV Angle:", GUILayout.Width(120));
+                Vars.killauraFOV = GUILayout.HorizontalSlider(Vars.killauraFOV, 1f, 360f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                GUILayout.Label($"Angle: {Mathf.RoundToInt(Vars.killauraFOV)}");
+                GUILayout.EndHorizontal();
+
+                // Might fix or just remove idk
+                //GUILayout.BeginHorizontal();
+                //GUILayout.Space(20);
+                //Vars.killauraFOVCircle = GUILayout.Toggle(Vars.killauraFOVCircle, "FOV Circle");
+                //GUILayout.EndHorizontal();
+            }
+        }
 
         public static void Draw()
         {
@@ -94,7 +262,8 @@ namespace ValheimChet
             {
                 menuRect = GUI.Window(0, menuRect, Window, "ValheimChet");
             }
-            GUI.Box(new Rect(Screen.width - 90, 10, 80, 20), "INJECTED");
+            GUI.Box(new Rect(Screen.width - 90, 10, 80, 25), "INJECTED");
+            GUI.Box(new Rect((Screen.width - 130) - 80, 10, 100, 25), $"Ping: {Vars.serverPing}");
         }
 
         public static void Init()
@@ -106,16 +275,16 @@ namespace ValheimChet
         {
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("CAMERA")) { tab = 0; }
-            if (GUILayout.Button("MOVEMENT")) { tab = 1; }
-            if (GUILayout.Button("PLAYER")) { tab = 2; }
-            if (GUILayout.Button("SKILLS")) { tab = 3; }
-            if (GUILayout.Button("MISC")) { tab = 4; }
+            if (GUILayout.Button("CAMERA")) { currentTab = 0; }
+            if (GUILayout.Button("MOVEMENT")) { currentTab = 1; }
+            if (GUILayout.Button("PLAYER")) { currentTab = 2; }
+            if (GUILayout.Button("SKILLS")) { currentTab = 3; }
+            if (GUILayout.Button("MISC")) { currentTab = 4; }
             GUILayout.EndHorizontal();
             GUILayout.Space(8);
 
 
-            switch (tab)
+            switch (currentTab)
             {
                 /*
                   sSSs   .S_SSSs     .S_SsS_S.     sSSs   .S_sSSs     .S_SSSs          sdSS_SSSSSSbs   .S_SSSs     .S_SSSs   
@@ -173,6 +342,7 @@ namespace ValheimChet
                             Vars.esp_name = GUILayout.Toggle(Vars.esp_name, "ESP Name");
                             GUILayout.EndHorizontal();
                         }
+                        
                         break;
                     }
 
@@ -279,7 +449,6 @@ namespace ValheimChet
                 case 2:
                     {
                         menuRect.height = 570;
-                        bool reset = false;
 
                         // Player Health changer
                         GUILayout.BeginHorizontal();
@@ -299,65 +468,48 @@ namespace ValheimChet
                                 {
                                     Vars.currentBaseHP = Int32.Parse(Vars.str_currentBaseHP);
                                 }
-                                else { Debug.Log("Couldn't Parse str_currentBaseHP"); }
+                                else { Chet.ErrorLog("Couldn't Parse str_currentBaseHP"); }
                             }
                             GUILayout.Label($"HP: {Mathf.RoundToInt(Vars.currentBaseHP)}");
                             GUILayout.EndHorizontal();
                         }
 
+                        // No Hurt
                         GUILayout.BeginHorizontal();
                         Vars.noHurt = GUILayout.Toggle(Vars.noHurt, "NoHurt");
                         GUILayout.EndHorizontal();
 
+                        // One Tap
                         GUILayout.BeginHorizontal();
                         Vars.oneTap = GUILayout.Toggle(Vars.oneTap, "OneTap");
                         GUILayout.EndHorizontal();
 
-                        // Effect Changer
+                        // Hit Range
                         GUILayout.BeginHorizontal();
-                        Vars.effect_changer = GUILayout.Toggle(Vars.effect_changer, "Effect Changer");
+                        Vars.hitRange_changer = GUILayout.Toggle(Vars.hitRange_changer, "Hit Range Changer");
                         GUILayout.EndHorizontal();
-                        if(Vars.effect_changer)
+                        if (Vars.hitRange_changer)
                         {
-                            foreach (string effectName in Vars.effectNames)
-                            {
-                                bool toggled = false;
-
-                                GUILayout.BeginHorizontal();
-                                GUILayout.Label(effectName);
-                                toggled = GUILayout.Toggle(toggled, "Add");
-                                reset = GUILayout.Toggle(reset, "Reset");
-                                GUILayout.Label("        ");
-                                GUILayout.EndHorizontal();
-                                if(toggled)
-                                {
-                                    if (effectName == "All")
-                                    {
-                                        foreach (string _effectName in Vars.effectNames)
-                                        {
-                                            if (_effectName == "All") continue;
-
-                                            Player.m_localPlayer.GetSEMan().AddStatusEffect(_effectName.GetStableHashCode());
-                                        }
-                                        continue;
-                                    }
-                                    Player.m_localPlayer.GetSEMan().AddStatusEffect(effectName.GetStableHashCode());
-                                    Debug.Log("Effect Added: " + effectName);
-                                    toggled = !toggled;
-                                }
-                                if(reset)
-                                {
-                                    if(effectName == "All")
-                                    {
-                                        Player.m_localPlayer.GetSEMan().RemoveAllStatusEffects();
-                                        continue;
-                                    }
-
-                                    Player.m_localPlayer.GetSEMan().RemoveStatusEffect(effectName.GetStableHashCode());
-                                    reset = !reset;
-                                }
-                            }
+                            Vars.currentHitRange = GUILayout.HorizontalSlider(Vars.currentHitRange, 0f, 200f);
+                            GUILayout.Label($"Hit Range: {Mathf.RoundToInt(Vars.currentHitRange)}");
                         }
+
+                        // Hit Height
+                        GUILayout.BeginHorizontal();
+                        Vars.hitHeight_changer = GUILayout.Toggle(Vars.hitHeight_changer, "Hit Height Changer");
+                        GUILayout.EndHorizontal();
+                        if(Vars.hitHeight_changer)
+                        {
+                            Vars.currentHitHeight = GUILayout.HorizontalSlider(Vars.currentHitHeight, 0f, 200f);
+                            GUILayout.Label($"Hit Height: {Mathf.RoundToInt(Vars.currentHitHeight)}");
+                        }
+
+                        // Killaura
+                        DrawKillauraMenu();
+
+                        // Effect Changer
+                        DrawEffectsChangerMenu();
+
                         break;
                     }
 
@@ -385,53 +537,9 @@ namespace ValheimChet
                 case 3:
                     {
                         menuRect.height = 680;
-                        bool reset = false;
 
-                        // Skill changer
-                        Skills _skills = Player.m_localPlayer.GetSkills();
-                        GUILayout.BeginHorizontal();
-                        Vars.skill_changer = GUILayout.Toggle(Vars.skill_changer, "Skill Changer");
-                        GUILayout.EndHorizontal();
-                        if (Vars.skill_changer)
-                        {
-                            GUILayout.BeginVertical();
-                            GUILayout.Label($"Raise Value: {raiseValue}");
-                            raiseValue = GUILayout.HorizontalSlider(raiseValue, 0f, 100f);
-                            foreach (string skill in Vars.skillNames)
-                            {
-                                bool toggled = false;
-                                
-                                GUILayout.BeginHorizontal();
-                                GUILayout.Label(skill);
-                                toggled = GUILayout.Toggle(toggled, "Raise");
-                                reset = GUILayout.Toggle(reset, "Reset");
-                                GUILayout.Label("        ");
-                                GUILayout.EndHorizontal();
-                                if (toggled)
-                                {
-                                    _skills.CheatRaiseSkill(skill, raiseValue, true);
-                                    Debug.Log($"Raised Skill: {skill} with {raiseValue}");
-                                    toggled = !toggled;
-                                }
-                                if (reset)
-                                {
-                                    if (skill.ToLower() == "all")
-                                    {
-                                        foreach (string _skill in Vars.skillNames)
-                                        {
-                                            if(_skill == "all")
-                                                continue;
-                                            _skills.CheatResetSkill(_skill);
-                                        }
-                                        continue;
-                                    }
-                                    _skills.CheatResetSkill(skill);
-                                    Debug.Log($"Reseted Skill: {skill}");
-                                    reset = !reset;
-                                }
-                            }
-                            GUILayout.EndVertical();
-                        }
+                        DrawSkillChangerMenu();
+
                         break;
                     }
 
@@ -487,7 +595,7 @@ namespace ValheimChet
                             if (teleportToggle && !Player.m_localPlayer.IsTeleporting())
                             {
                                 Player.m_localPlayer.TeleportTo(new Vector3((float)Vars.tpPosX, (float)Vars.tpPosY, (float)Vars.tpPosZ), Player.m_localPlayer.transform.rotation, distantTP);
-                                Debug.Log($"Teleporting to: {Vars.tpPosX} {Vars.tpPosY} {Vars.tpPosZ}...");
+                                Chet.Log($"Teleporting to: {Vars.tpPosX} {Vars.tpPosY} {Vars.tpPosZ}...");
                             }
                         }
                         GUILayout.Space(10);
@@ -499,6 +607,7 @@ namespace ValheimChet
                         GUILayout.EndHorizontal();
 
                         // -------- Search Query Implementation --------
+                        spawnOnPlayer = GUILayout.Toggle(spawnOnPlayer, "Spawn On Player");
                         GUILayout.Label("Search Prefabs:");
                         searchQuery = GUILayout.TextField(searchQuery);
                         if (searchQuery.Length >= 2) { DrawPrefabSearchMenu(); }
@@ -510,23 +619,11 @@ namespace ValheimChet
                             Vars.prefabSpawnPosY = Int32.Parse(str_prefabSpawnPosY);
                             Vars.prefabSpawnPosZ = Int32.Parse(str_prefabSpawnPosZ);
                             isValidPrefabSpawnPos = true;
-                        } else { isValidPrefabSpawnPos = false; }
-
-                        // if hash is a valid prefab
-                        if (Int32.TryParse(str_prefabInput, out Vars.currentSpawnHash))
-                        {
-                            if (Vars.Prefabs.PrefabLookUp(Int32.Parse(str_prefabInput)) != null) {
-                                Vars.currentSpawnHash = Int32.Parse(str_prefabInput);
-                                Vars.EntitySpawnData.currentSpawnData.m_prefab = Vars.Prefabs.PrefabLookUp(Vars.currentSpawnHash);
-                                spawn = GUILayout.Toggle(spawn, $"Spawn {Vars.EntitySpawnData.currentSpawnData.m_prefab.name}");
-                                if (spawn) {
-                                    if(isValidPrefabSpawnPos)
-                                    {
-                                        Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, new Vector3((float)Vars.prefabSpawnPosX, (float)Vars.prefabSpawnPosY, (float)Vars.prefabSpawnPosZ));
-                                        spawn = !spawn;
-                                    }
-                                    GUILayout.Label("Spawn position is not valid...");
-                                }
+                        } else {
+                            if(spawnOnPlayer) { 
+                                isValidPrefabSpawnPos = true; 
+                            } else { 
+                                isValidPrefabSpawnPos = false;
                             }
                         }
 

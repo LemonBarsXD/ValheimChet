@@ -14,7 +14,7 @@ namespace ValheimChet
             Loader.Load.AddComponent<Chet>();
             Loader.Load.name = "Chet";
             UnityEngine.GameObject.DontDestroyOnLoad(Loader.Load);
-            ModEntryPoint.Init();
+            PatchEntryPoint.Init();
         }
 
         public static void Unload()
