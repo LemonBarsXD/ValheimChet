@@ -10,7 +10,7 @@ v1.1.0
 
 
 # Disclaimer
-Some features might not work online.
+Some features might not work online.<br _>
 FAIR USE. I TAKE NO RESPONSIBILITY FOR YOUR ACTIONS.
 
 # Supported Platforms
