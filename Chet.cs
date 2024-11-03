@@ -3,6 +3,9 @@
 
 using UnityEngine;
 
+/*  --- TODO/NOTES ---
+ *  + Fixed noHurt
+    --- TODO/NOTES ---  */
 
 namespace ValheimChet
 {
