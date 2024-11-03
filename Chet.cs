@@ -1,5 +1,5 @@
 ﻿// Author: Upwn
-// Ver: 1.1.1
+// Ver: 1.1.2
 
 using UnityEngine;
 
