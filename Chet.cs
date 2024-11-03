@@ -3,17 +3,6 @@
 
 using UnityEngine;
 
-/* -- TODO / Notes --
- + Code cleanup:
- +  * Organised Initialization
- +  * Simplified Conditionals
- +  * Improved readability
- +  * Killaura.cs
- + Added In-Game check
- + Added the players position under minimap
- + Added simple custom keybind instructions (see UserInput.cs) 
- + Updated Reflection Method 'spawn' to Include Additional Parameters (added in new update)
-   -- ----  /  ---- -- */
 
 namespace ValheimChet
 {
