@@ -1,5 +1,5 @@
 # Current Release 
-v1.1.0
+v1.1.1
 
 # How to use/inject
 1. Compile project or use already compiled (windows dll) from releases . <br _>
