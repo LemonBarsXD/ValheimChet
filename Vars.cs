@@ -31,6 +31,7 @@ namespace ValheimChet
         }
 
         /* Booleans */
+        public static bool inGame;
         public static bool fov_changer;
         public static bool speed_changer;
         public static bool runSpeed_changer;
@@ -93,14 +94,6 @@ namespace ValheimChet
 
 
         /* Integers */
-        public static int tpPosX;
-        public static int tpPosY;
-        public static int tpPosZ;
-        
-        public static int prefabSpawnPosX;
-        public static int prefabSpawnPosY;
-        public static int prefabSpawnPosZ;
-
         public static int serverPing;
 
 
@@ -153,6 +146,8 @@ namespace ValheimChet
         };
 
         /* Unity structs */
+        public static Vector3 playerTPPos = Vector3.zero;
+        public static Vector3 prefabSpawnPos = Vector3.zero;
     }
 }
 

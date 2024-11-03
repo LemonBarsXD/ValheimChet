@@ -308,6 +308,7 @@
     <Compile Include="Chet.cs" />
     <Compile Include="ClassFieldsChecker.cs" />
     <Compile Include="Hooks.cs" />
+    <Compile Include="Killaura.cs" />
     <Compile Include="Reflections.cs" />
     <Compile Include="Render.cs" />
     <Compile Include="UserInput.cs" />

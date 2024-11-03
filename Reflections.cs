@@ -8,9 +8,9 @@ using ValheimChet;
 public class Reflections
 {
 
-    // Token: 0x060013B6 RID: 5046 RVA: 0x0008E3E4 File Offset: 0x0008C5E4
+    // Token: 0x06001417 RID: 5143 RVA: 0x00091E60 File Offset: 0x00090060
     // private void Spawn(SpawnSystem.SpawnData critter, Vector3 spawnPoint, bool eventSpawner)
-    public static void spawn(SpawnSystem.SpawnData critter, Vector3 spawnPoint, bool eventSpawner = false)
+    public static void spawn(SpawnSystem.SpawnData critter, Vector3 spawnPoint, bool eventSpawner = false, int minLevelOverride = -1, float levelUpMultiplier = 1f)
     {
         SpawnSystem classInstance = GameObject.FindObjectOfType<SpawnSystem>();
 
@@ -21,7 +21,7 @@ public class Reflections
 
         if (spawnMethod != null)
         {
-            object[] parameters = { critter, spawnPoint, eventSpawner };
+            object[] parameters = { critter, spawnPoint, eventSpawner, minLevelOverride, levelUpMultiplier };
             spawnMethod.Invoke(classInstance, parameters);
         }
         else

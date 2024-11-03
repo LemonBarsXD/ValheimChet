@@ -1,12 +1,7 @@
-﻿// Cred: https://gist.github.com/ethanedits/9c97dfc3746412007c43101e93dfbc98
-
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Render : MonoBehaviour
 {
-
-
-
     public static GUIStyle StringStyle { get; set; } = new GUIStyle(GUI.skin.label);
 
     public static Color Color

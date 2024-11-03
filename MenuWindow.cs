@@ -1,44 +1,85 @@
-﻿using System;
+﻿// Comment font is AMC AAA01 on https://www.asciiart.eu/text-to-ascii-art
+
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ValheimChet
 {
+    enum TABS
+    {   
+        CAMERA = 0,
+        MOVEMENT = 1,
+        PLAYER = 2,
+        STATS = 3,
+        MISC = 4,
+    }
     internal class MenuWindow
     {
 
-        // stuff
-        private static Rect menuRect;
-        
-        private static int currentTab = 0;
-        
-        private static float raiseValue = 0f;
+        // Menu
+        private static Rect menuRect = new Rect(900, 100, 450, 550);
+        private static TABS currentTab = 0;
 
+        // Player TP
+        private static string str_tpPosX = string.Empty;
+        private static string str_tpPosY = string.Empty;
+        private static string str_tpPosZ = string.Empty;
         private static bool distantTP = false;
         private static bool isValidPrefabSpawnPos = false;
         private static bool spawnOnPlayer = false;
 
-        // Player TP Pos
-        private static string str_tpPosX = string.Empty;
-        private static string str_tpPosY = string.Empty;
-        private static string str_tpPosZ = string.Empty;
-
-        // Entity Spawn pos
+        // Entity Spawn 
         private static string str_prefabInput = string.Empty;
         private static string str_prefabSpawnPosX = string.Empty;
         private static string str_prefabSpawnPosY = string.Empty;
         private static string str_prefabSpawnPosZ = string.Empty;
 
-        // Variables for search method
-        // prefab menu
+        // Prefab menu
         private static string searchQuery = string.Empty;
         private static List<string> searchResults = new List<string>();
-
         private static Vector2 prefabMenuScrollPosition = Vector2.zero;
+        private static Vector3 prefabSpawnPos = Vector3.zero;
 
-        // effects menu
+        // Effects menu
         private static Vector2 effectsMenuScrollPosition = Vector2.zero;
 
+        // Skill changer 
+        private static float raiseValue = 0f;
+        private static Vector2 skillMenuScrollPosition = Vector2.zero;
+
+        public static void Draw()
+        {
+            if (Vars.menu_toggle) { menuRect = GUI.Window(0, menuRect, Window, "ValheimChet"); }
+            DrawChetIndicators();
+            DrawPlayerPosition();
+        }
+
+        public static void DrawChetIndicators()
+        {
+            GUI.Box(new Rect(Screen.width - 90, 10, 80, 25), "INJECTED");
+            GUI.Box(new Rect((Screen.width - 135) - 80, 10, 90, 25), $"Ping: {Vars.serverPing}");
+        }
+
+
+        public static void DrawPlayerPosition()
+        {
+            Vector3 localPlayerPosition = Player.m_localPlayer.transform.position;
+            Render.DrawString(new Vector2(Screen.width - 135, 245), $"X: {localPlayerPosition.x:F2} Y: {localPlayerPosition.y:F2} Z: {localPlayerPosition.z:F2}");
+        }
+
+        private static bool TryParseVector3(string x, string y, string z, out Vector3 result)
+        {
+            if (float.TryParse(x, out float px) && float.TryParse(y, out float py) && float.TryParse(z, out float pz))
+            {
+                result = new Vector3(px, py, pz);
+                return true;
+            }
+            result = Vector3.zero;
+            return false;
+        }
 
         private static void DrawPrefabSearchMenu()
         {
@@ -46,12 +87,13 @@ namespace ValheimChet
 
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                searchResults.Clear(); 
+                searchResults.Clear();
+
+                string userQuery = searchQuery.ToLower();
 
                 foreach (GameObject prefab in Vars.Prefabs.GetAllPrefabs())
                 {
                     string prefabName = prefab.name.ToLower();
-                    string userQuery = searchQuery.ToLower();
 
                     if (prefabName.Contains(userQuery))
                     {
@@ -59,7 +101,7 @@ namespace ValheimChet
                     }
                 }
 
-                float maxScrollViewHeight = 335f;
+                float maxScrollViewHeight = 300f;
 
                 prefabMenuScrollPosition = GUILayout.BeginScrollView(prefabMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
 
@@ -72,30 +114,20 @@ namespace ValheimChet
 
                     if (GUILayout.Button("Spawn"))
                     {
+                        Chet.Log("Spawn Button Pressed!");
                         Vars.EntitySpawnData.currentSpawnData.m_prefab = Vars.Prefabs.PrefabLookUp(result.GetStableHashCode());
+                        Chet.Log("Prefab spawn data success!");
 
-                        if (isValidPrefabSpawnPos)
+                        if (spawnOnPlayer)
                         {
-                            if (!spawnOnPlayer)
-                            {
-                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, new Vector3((float)Vars.prefabSpawnPosX, (float)Vars.prefabSpawnPosY, (float)Vars.prefabSpawnPosZ));
-                                Chet.Log($"Spawned prefab: {result}");
-                            } 
-                            else
-                            {
-                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, 
-                                    new Vector3(
-                                        Player.m_localPlayer.transform.position.x, 
-                                        Player.m_localPlayer.transform.position.y + 3.0f, 
-                                        Player.m_localPlayer.transform.position.z) 
-                                    );
-                                Chet.Log($"Spawned prefab: {result}");
-                            }
-                        }
+                            Vector3 PlayerPos = Player.m_localPlayer.transform.position; PlayerPos.y += 2.0f;
+                            Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, PlayerPos, false);
+                            Chet.Log($"Spawned prefab: {result}, Hash code {result.GetStableHashCode()}");
+                        } 
                         else
                         {
-                            GUILayout.Label("Spawn position is not valid...");
-                            Chet.ErrorLog("Spawn position is not valid...");
+                            Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, Vars.prefabSpawnPos, false);
+                            Chet.Log($"Spawned prefab: {result}, Hash code {result.GetStableHashCode()}");
                         }
                     }
 
@@ -116,9 +148,16 @@ namespace ValheimChet
             GUILayout.EndHorizontal();
             if (Vars.skill_changer)
             {
-                GUILayout.BeginVertical();
+                float maxScrollViewHeight = 220f;
+
+                GUILayout.BeginHorizontal();
                 GUILayout.Label($"Raise Value: {raiseValue}");
                 raiseValue = GUILayout.HorizontalSlider(raiseValue, 0f, 100f);
+                GUILayout.EndHorizontal();
+
+                skillMenuScrollPosition = GUILayout.BeginScrollView(skillMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
+
+                GUILayout.BeginVertical();
 
                 foreach (string skill in Vars.skillNames)
                 {
@@ -142,8 +181,7 @@ namespace ValheimChet
                         {
                             foreach (string _skill in Vars.skillNames)
                             {
-                                if (_skill == "all")
-                                    continue;
+                                if (_skill == "all") continue;
                                 _skills.CheatResetSkill(_skill);
                             }
                             continue;
@@ -154,6 +192,7 @@ namespace ValheimChet
                     }
                 }
                 GUILayout.EndVertical();
+                GUILayout.EndScrollView();
             }
         }
 
@@ -166,7 +205,7 @@ namespace ValheimChet
             GUILayout.EndHorizontal();
             if (Vars.effect_changer)
             {
-                float maxScrollViewHeight = 300f;
+                float maxScrollViewHeight = 245f;
 
                 effectsMenuScrollPosition = GUILayout.BeginScrollView(effectsMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
 
@@ -256,30 +295,15 @@ namespace ValheimChet
             }
         }
 
-        public static void Draw()
-        {
-            if (Vars.menu_toggle)
-            {
-                menuRect = GUI.Window(0, menuRect, Window, "ValheimChet");
-            }
-            GUI.Box(new Rect(Screen.width - 90, 10, 80, 25), "INJECTED");
-            GUI.Box(new Rect((Screen.width - 130) - 80, 10, 100, 25), $"Ping: {Vars.serverPing}");
-        }
-
-        public static void Init()
-        {
-            menuRect = new Rect(900, 100, 400, 500);
-        }
-
         private static void Window(int windowId)
         {
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("CAMERA")) { currentTab = 0; }
-            if (GUILayout.Button("MOVEMENT")) { currentTab = 1; }
-            if (GUILayout.Button("PLAYER")) { currentTab = 2; }
-            if (GUILayout.Button("SKILLS")) { currentTab = 3; }
-            if (GUILayout.Button("MISC")) { currentTab = 4; }
+            if (GUILayout.Button("CAMERA")) { currentTab = TABS.CAMERA; } 
+            if (GUILayout.Button("MOVEMENT")) { currentTab = TABS.MOVEMENT; }
+            if (GUILayout.Button("PLAYER")) { currentTab = TABS.PLAYER; }
+            if (GUILayout.Button("STATS")) { currentTab = TABS.STATS; }
+            if (GUILayout.Button("MISC")) { currentTab = TABS.MISC; }
             GUILayout.EndHorizontal();
             GUILayout.Space(8);
 
@@ -302,7 +326,7 @@ namespace ValheimChet
                                SP           SP           SP                 SP              SP               SP   SP         
                                Y            Y            Y                  Y               Y                Y    Y          
                  */
-                case 0:
+                case TABS.CAMERA:
                     {
                         menuRect.height = 500;
 
@@ -367,7 +391,7 @@ namespace ValheimChet
                         SP                                              SP           SP               SP                   SP               SP   SP         
                         Y                                               Y            Y                Y                    Y                Y    Y          
                  */
-                case 1:
+                case TABS.MOVEMENT:
                     {
                         menuRect.height = 500;
 
@@ -375,7 +399,6 @@ namespace ValheimChet
                         GUILayout.BeginHorizontal();
                         Vars.speed_changer = GUILayout.Toggle(Vars.speed_changer, "Speed Changer");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
                         if (Vars.speed_changer)
                         {
                             Vars.currentSpeed = GUILayout.HorizontalSlider(Vars.currentSpeed, 1f, 200f);
@@ -386,7 +409,6 @@ namespace ValheimChet
                         GUILayout.BeginHorizontal();
                         Vars.runSpeed_changer = GUILayout.Toggle(Vars.runSpeed_changer, "Run Speed Changer");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
                         if (Vars.runSpeed_changer)
                         {
                             Vars.currentRunSpeed = GUILayout.HorizontalSlider(Vars.currentRunSpeed, 1f, 200f);
@@ -397,7 +419,6 @@ namespace ValheimChet
                         GUILayout.BeginHorizontal();
                         Vars.acceleration_changer = GUILayout.Toggle(Vars.acceleration_changer, "Acceleration Changer");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
                         if (Vars.acceleration_changer)
                         {
                             Vars.currentAcceleration = GUILayout.HorizontalSlider(Vars.currentAcceleration, 1f, 30f);
@@ -408,19 +429,16 @@ namespace ValheimChet
                         GUILayout.BeginHorizontal();
                         Vars.noTurnDelay = GUILayout.Toggle(Vars.noTurnDelay, "NoTurnDelay");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
 
                         // NoFall Toggle
                         GUILayout.BeginHorizontal();
                         Vars.noFall = GUILayout.Toggle(Vars.noFall, "NoFall");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
 
                         // NoStamina Toggle
                         GUILayout.BeginHorizontal();
                         Vars.noStamina = GUILayout.Toggle(Vars.noStamina, "NoStamina");
                         GUILayout.EndHorizontal();
-                        GUILayout.Space(5);
 
                         break;
                     }
@@ -446,7 +464,7 @@ namespace ValheimChet
                 SP                         SP     SP             SP                     SP               SP   SP         
                 Y                          Y      Y              Y                      Y                Y    Y          
                  */
-                case 2:
+                case TABS.PLAYER:
                     {
                         menuRect.height = 570;
 
@@ -507,9 +525,6 @@ namespace ValheimChet
                         // Killaura
                         DrawKillauraMenu();
 
-                        // Effect Changer
-                        DrawEffectsChangerMenu();
-
                         break;
                     }
 
@@ -519,26 +534,27 @@ namespace ValheimChet
 
 
                 /*
-                   sSSs   .S    S.    .S  S.      S.        sSSs        sdSS_SSSSSSbs   .S_SSSs     .S_SSSs   
-                 d%%SP  .SS    SS.  .SS  SS.     SS.      d%%SP        YSSS~S%SSSSSP  .SS~SSSSS   .SS~SSSSS  
-                d%S'    S%S    S&S  S%S  S%S     S%S     d%S'               S%S       S%S   SSSS  S%S   SSSS 
-                S%|     S%S    d*S  S%S  S%S     S%S     S%|                S%S       S%S    S%S  S%S    S%S 
-                S&S     S&S   .S*S  S&S  S&S     S&S     S&S                S&S       S%S SSSS%S  S%S SSSS%P 
-                Y&Ss    S&S_sdSSS   S&S  S&S     S&S     Y&Ss               S&S       S&S  SSS%S  S&S  SSSY  
-                `S&&S   S&S~YSSY%b  S&S  S&S     S&S     `S&&S              S&S       S&S    S&S  S&S    S&S 
-                  `S*S  S&S    `S%  S&S  S&S     S&S       `S*S             S&S       S&S    S&S  S&S    S&S 
-                   l*S  S*S     S%  S*S  S*b     S*b        l*S             S*S       S*S    S&S  S*S    S&S 
-                  .S*P  S*S     S&  S*S  S*S.    S*S.      .S*P             S*S       S*S    S*S  S*S    S*S 
-                sSS*S   S*S     S&  S*S   SSSbs   SSSbs  sSS*S              S*S       S*S    S*S  S*S SSSSP  
-                YSS'    S*S     SS  S*S    YSSP    YSSP  YSS'               S*S       SSS    S*S  S*S  SSY   
-                        SP          SP                                      SP               SP   SP         
-                        Y           Y                                       Y                Y    Y          
+              sSSs  sdSS_SSSSSSbs   .S_SSSs    sdSS_SSSSSSbs    sSSs        sdSS_SSSSSSbs   .S_SSSs     .S_SSSs   
+             d%%SP  YSSS~S%SSSSSP  .SS~SSSSS   YSSS~S%SSSSSP   d%%SP        YSSS~S%SSSSSP  .SS~SSSSS   .SS~SSSSS  
+            d%S'         S%S       S%S   SSSS       S%S       d%S'               S%S       S%S   SSSS  S%S   SSSS 
+            S%|          S%S       S%S    S%S       S%S       S%|                S%S       S%S    S%S  S%S    S%S 
+            S&S          S&S       S%S SSSS%S       S&S       S&S                S&S       S%S SSSS%S  S%S SSSS%P 
+            Y&Ss         S&S       S&S  SSS%S       S&S       Y&Ss               S&S       S&S  SSS%S  S&S  SSSY  
+            `S&&S        S&S       S&S    S&S       S&S       `S&&S              S&S       S&S    S&S  S&S    S&S 
+              `S*S       S&S       S&S    S&S       S&S         `S*S             S&S       S&S    S&S  S&S    S&S 
+               l*S       S*S       S*S    S&S       S*S          l*S             S*S       S*S    S&S  S*S    S&S 
+              .S*P       S*S       S*S    S*S       S*S         .S*P             S*S       S*S    S*S  S*S    S*S 
+            sSS*S        S*S       S*S    S*S       S*S       sSS*S              S*S       S*S    S*S  S*S SSSSP  
+            YSS'         S*S       SSS    S*S       S*S       YSS'               S*S       SSS    S*S  S*S  SSY   
+                         SP               SP        SP                           SP               SP   SP         
+                         Y                Y         Y                            Y                Y    Y          
                  */
-                case 3:
+                case TABS.STATS:
                     {
-                        menuRect.height = 680;
+                        menuRect.height = 600;
 
                         DrawSkillChangerMenu();
+                        DrawEffectsChangerMenu();
 
                         break;
                     }
@@ -563,7 +579,7 @@ namespace ValheimChet
                         SP   SP                              SP               SP   SP         
                         Y    Y                               Y                Y    Y          
                  */
-                case 4:
+                case TABS.MISC:
                     {
                         menuRect.height = 600;
                         bool teleportToggle = false;
@@ -579,23 +595,15 @@ namespace ValheimChet
                         Vars.tpAllEntitiesToPlayer = GUILayout.Toggle(Vars.tpAllEntitiesToPlayer, "TP All Entities to Player");
                         GUILayout.EndHorizontal();
 
-                        // check if we can tp (if you have better idea for code structure, show me pls)
-                        if (
-                            Int32.TryParse(str_tpPosX, out Vars.tpPosX) && 
-                            Int32.TryParse(str_tpPosY, out Vars.tpPosY) && 
-                            Int32.TryParse(str_tpPosZ, out Vars.tpPosZ)
-                            )
+                        if (TryParseVector3(str_tpPosX, str_tpPosY, str_tpPosZ, out Vars.playerTPPos))
                         {
-                            Vars.tpPosX = Int32.Parse(str_tpPosX);
-                            Vars.tpPosY = Int32.Parse(str_tpPosY);
-                            Vars.tpPosZ = Int32.Parse(str_tpPosZ);
                             distantTP = GUILayout.Toggle(distantTP, "Distant TP");
                             Vars.noFall = GUILayout.Toggle(Vars.noFall, "NoFall (Recommended)");
                             teleportToggle = GUILayout.Toggle(teleportToggle, "Start TP");
                             if (teleportToggle && !Player.m_localPlayer.IsTeleporting())
                             {
-                                Player.m_localPlayer.TeleportTo(new Vector3((float)Vars.tpPosX, (float)Vars.tpPosY, (float)Vars.tpPosZ), Player.m_localPlayer.transform.rotation, distantTP);
-                                Chet.Log($"Teleporting to: {Vars.tpPosX} {Vars.tpPosY} {Vars.tpPosZ}...");
+                                Player.m_localPlayer.TeleportTo(Vars.playerTPPos, Player.m_localPlayer.transform.rotation, distantTP);
+                                Chet.Log($"Teleporting to: {Vars.playerTPPos}...");
                             }
                         }
                         GUILayout.Space(10);
@@ -610,14 +618,11 @@ namespace ValheimChet
                         spawnOnPlayer = GUILayout.Toggle(spawnOnPlayer, "Spawn On Player");
                         GUILayout.Label("Search Prefabs:");
                         searchQuery = GUILayout.TextField(searchQuery);
-                        if (searchQuery.Length >= 2) { DrawPrefabSearchMenu(); }
+                        if (searchQuery.Length >= 2 && isValidPrefabSpawnPos) { DrawPrefabSearchMenu(); }
                         // ---------------------------------------------
 
-                        if (Int32.TryParse(str_prefabSpawnPosX, out Vars.prefabSpawnPosX) && Int32.TryParse(str_prefabSpawnPosY, out Vars.prefabSpawnPosY) && Int32.TryParse(str_prefabSpawnPosZ, out Vars.prefabSpawnPosZ))
+                        if (TryParseVector3(str_prefabSpawnPosX, str_prefabSpawnPosY, str_prefabSpawnPosZ, out Vars.prefabSpawnPos))
                         {
-                            Vars.prefabSpawnPosX = Int32.Parse(str_prefabSpawnPosX);
-                            Vars.prefabSpawnPosY = Int32.Parse(str_prefabSpawnPosY);
-                            Vars.prefabSpawnPosZ = Int32.Parse(str_prefabSpawnPosZ);
                             isValidPrefabSpawnPos = true;
                         } else {
                             if(spawnOnPlayer) { 

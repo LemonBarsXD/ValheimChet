@@ -1,11 +1,9 @@
 ﻿using HarmonyLib;
-using System;
 using UnityEngine;
 using ValheimChet;
 
 
-// 7d2dmods.github.io/HarmonyDocs/index.htm?PrefixandPostfix.html
-// Very gud resource, i recommend ;)
+// Resource: 7d2dmods.github.io/HarmonyDocs/index.htm?PrefixandPostfix.html
 public class PatchEntryPoint
 {
     public static void Init()
@@ -24,34 +22,23 @@ public class OnDamage
     {
         try
         {
-            if (Vars.noFall)
+            if (Vars.noFall && hit.m_hitType == HitData.HitType.Fall)
             {
-                if (hit.m_hitType == HitData.HitType.Fall)
-                {
-                    hit.m_damage.m_damage = 0;
-                    Chet.Log("Modified m_damage of HitData.HitType.Fall to: " + hit.m_damage.m_damage + "\n");
-                }
+                hit.m_damage.m_damage = 0;
+                Chet.Log("Modified m_damage of HitData.HitType.Fall to: " + hit.m_damage.m_damage + "\n");
             }
 
-            if (Vars.noHurt)
+            if (Vars.noHurt && hit.m_hitType == HitData.HitType.EnemyHit)
             {
-                // Does not work for some reason
-                if (hit.m_hitType == HitData.HitType.EnemyHit)
-                {
-                    hit.m_damage.m_blunt = 0;
-                    hit.m_damage.m_damage = 0;
-                    Chet.Log("Damage set to: " + hit.m_damage.m_damage + " Blunt damage set to: " + hit.m_damage.m_blunt + "\n");
-                }
+                hit.m_damage.m_blunt = 0;
+                hit.m_damage.m_damage = 0;
+                Chet.Log("Damage set to: " + hit.m_damage.m_damage + " Blunt damage set to: " + hit.m_damage.m_blunt + "\n");
             }
 
-            if (Vars.oneTap)
+            if (Vars.oneTap && hit.GetAttacker() == Player.m_localPlayer)
             {
-                // Imagine if I didn't find the RPC_Damage method (hell would've emerged)
-                if (hit.GetAttacker() == Player.m_localPlayer)
-                {
-                    hit.m_damage.m_damage = float.MaxValue;
-                    Chet.Log("hit.m_damage.m_damage set to: float.Maxvalue\n");
-                }
+                hit.m_damage.m_damage = float.MaxValue;
+                Chet.Log("hit.m_damage.m_damage set to: float.Maxvalue\n");
             }
         }
         catch (System.Exception e)
@@ -167,19 +154,5 @@ public class OnServerPing
             return false;
         }
     }
-
-    //public static float Prefix(float __result)
-    //{
-    //    try
-    //    {
-    //        Vars.serverPing = (int)__result;
-    //        return __result;
-    //    }
-    //    catch (System.Exception e)
-    //    {
-    //        Chet.ErrorLog($"Exception in patch of public float ZNet::GetServerPing:\n{e}\n");
-    //        return 0f;
-    //    }
-    //}
 }
 
