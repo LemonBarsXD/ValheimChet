@@ -3,7 +3,7 @@ using UnityEngine;
 using ValheimChet;
 
 
-// Resource: 7d2dmods.github.io/HarmonyDocs/index.htm?PrefixandPostfix.html
+// Resource: https://7d2dmods.github.io/HarmonyDocs/index.htm?PrefixandPostfix.html
 public class PatchEntryPoint
 {
     public static void Init()
@@ -22,20 +22,31 @@ public class OnDamage
     {
         try
         {
+            Character attacker = hit.GetAttacker();
             if (Vars.noFall && hit.m_hitType == HitData.HitType.Fall)
             {
                 hit.m_damage.m_damage = 0;
                 Chet.Log("Modified m_damage of HitData.HitType.Fall to: " + hit.m_damage.m_damage + "\n");
             }
 
-            if (Vars.noHurt && hit.m_hitType == HitData.HitType.EnemyHit)
+            if (Vars.noHurt && hit.m_hitType != HitData.HitType.PlayerHit)
             {
-                hit.m_damage.m_blunt = 0;
-                hit.m_damage.m_damage = 0;
-                Chet.Log("Damage set to: " + hit.m_damage.m_damage + " Blunt damage set to: " + hit.m_damage.m_blunt + "\n");
+                hit.m_damage.m_damage = 0f;
+                hit.m_damage.m_blunt = hit.m_damage.m_damage;
+                hit.m_damage.m_poison = hit.m_damage.m_damage;
+                hit.m_damage.m_fire = hit.m_damage.m_damage;
+                hit.m_damage.m_spirit = hit.m_damage.m_damage;
+                hit.m_damage.m_frost = hit.m_damage.m_damage;
+                hit.m_damage.m_lightning = hit.m_damage.m_damage;
+                hit.m_damage.m_chop = hit.m_damage.m_damage;
+                hit.m_damage.m_pierce = hit.m_damage.m_damage;
+                hit.m_damage.m_slash = hit.m_damage.m_damage;
+                hit.m_damage.m_pickaxe = hit.m_damage.m_damage;
+
+                Chet.Log("All damage set to: " + hit.m_damage.m_damage + "\n");
             }
 
-            if (Vars.oneTap && hit.GetAttacker() == Player.m_localPlayer)
+            if (Vars.oneTap && attacker == Player.m_localPlayer)
             {
                 hit.m_damage.m_damage = float.MaxValue;
                 Chet.Log("hit.m_damage.m_damage set to: float.Maxvalue\n");
