@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -83,7 +84,6 @@ namespace ValheimChet
 
         private static void DrawPrefabSearchMenu()
         {
-            GUILayout.Label($"Found {searchResults.Count} results");
 
             if (!string.IsNullOrEmpty(searchQuery))
             {
@@ -101,40 +101,41 @@ namespace ValheimChet
                     }
                 }
 
-                float maxScrollViewHeight = 300f;
 
-                prefabMenuScrollPosition = GUILayout.BeginScrollView(prefabMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
+                if (searchResults.Count > 0 && searchQuery.Length >= 2 && isValidPrefabSpawnPos) {
 
-                GUILayout.Space(4);
+                    float maxScrollViewHeight = 300f;
 
-                foreach (string result in searchResults)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label(result);
+                    prefabMenuScrollPosition = GUILayout.BeginScrollView(prefabMenuScrollPosition, GUILayout.Height(maxScrollViewHeight));
 
-                    if (GUILayout.Button("Spawn"))
+                    GUILayout.Space(4);
+
+                    foreach (string result in searchResults)
                     {
-                        Chet.Log("Spawn Button Pressed!");
-                        Vars.EntitySpawnData.currentSpawnData.m_prefab = Vars.Prefabs.PrefabLookUp(result.GetStableHashCode());
-                        Chet.Log("Prefab spawn data success!");
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label(result);
 
-                        if (spawnOnPlayer)
+                        if (GUILayout.Button("Spawn"))
                         {
-                            Vector3 PlayerPos = Player.m_localPlayer.transform.position; PlayerPos.y += 2.0f;
-                            Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, PlayerPos, false);
-                            Chet.Log($"Spawned prefab: {result}, Hash code {result.GetStableHashCode()}");
-                        } 
-                        else
-                        {
-                            Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, Vars.prefabSpawnPos, false);
-                            Chet.Log($"Spawned prefab: {result}, Hash code {result.GetStableHashCode()}");
+                            Vars.EntitySpawnData.currentSpawnData.m_prefab = Vars.Prefabs.PrefabLookUp(result.GetStableHashCode());
+
+                            if (spawnOnPlayer)
+                            {
+                                Vector3 PlayerPos = Player.m_localPlayer.transform.position; PlayerPos.y += 2.0f;
+                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, PlayerPos, false);
+                            }
+                            else
+                            {
+                                Reflections.spawn(Vars.EntitySpawnData.currentSpawnData, Vars.prefabSpawnPos, false);
+                            }
                         }
+
+                        GUILayout.EndHorizontal();
                     }
 
-                    GUILayout.EndHorizontal();
+                    GUILayout.EndScrollView();
                 }
 
-                GUILayout.EndScrollView();
             }
         }
 
@@ -618,7 +619,7 @@ namespace ValheimChet
                         spawnOnPlayer = GUILayout.Toggle(spawnOnPlayer, "Spawn On Player");
                         GUILayout.Label("Search Prefabs:");
                         searchQuery = GUILayout.TextField(searchQuery);
-                        if (searchQuery.Length >= 2 && isValidPrefabSpawnPos) { DrawPrefabSearchMenu(); }
+                        DrawPrefabSearchMenu();
                         // ---------------------------------------------
 
                         if (TryParseVector3(str_prefabSpawnPosX, str_prefabSpawnPosY, str_prefabSpawnPosZ, out Vars.prefabSpawnPos))
