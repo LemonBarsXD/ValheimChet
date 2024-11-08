@@ -152,7 +152,7 @@ namespace ValheimChet
                 float maxScrollViewHeight = 220f;
 
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"Raise Value: {raiseValue}");
+                GUILayout.Label($"Raise Value: {Mathf.Round(raiseValue)}");
                 raiseValue = GUILayout.HorizontalSlider(raiseValue, 0f, 100f);
                 GUILayout.EndHorizontal();
 
