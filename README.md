@@ -15,5 +15,5 @@ FAIR USE. I TAKE NO RESPONSIBILITY FOR YOUR ACTIONS.
 
 # Supported Platforms
 * Windows: Supported (Native)
-* Linux: Maybe
-* MacOS: Nope
+* Linux: TBD
+* MacOS: TBD
